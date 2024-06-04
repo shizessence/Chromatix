@@ -30,7 +30,7 @@ class TunerConductor: ObservableObject, HasAudioEngine {
     let noteFrequencies = [16.35, 17.32, 18.35, 19.45, 20.6, 21.83, 23.12, 24.5, 25.96, 27.5, 29.14, 30.87]
     let noteNamesWithSharps = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"]
     let noteNamesWithFlats = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"]
-
+    
     init() {
         engine =  AudioEngine()
         guard let input = engine.input else { fatalError() }
@@ -82,72 +82,61 @@ class TunerConductor: ObservableObject, HasAudioEngine {
         let octave = Int(log2f(pitch / frequency))
         data.noteNameWithSharps = "\(noteNamesWithSharps[index])\(octave)"
         data.noteNameWithFlats = "\(noteNamesWithFlats[index])\(octave)"
+        
     }
 }
 
 struct TunerView: View {
     @StateObject var conductor = TunerConductor()
-
+    
     var body: some View {
-        VStack {
-            HStack {
-                Text("Frequency")
-                Spacer()
-                Text("\(conductor.data.pitch, specifier: "%0.1f")")
-            }.padding()
-
-            HStack {
-                Text("Amplitude")
-                Spacer()
-                Text("\(conductor.data.amplitude, specifier: "%0.1f")")
-            }.padding()
-
-            HStack {
-                Text("Note Name")
-                Spacer()
-                Text("\(conductor.data.noteNameWithSharps) / \(conductor.data.noteNameWithFlats)")
-            }.padding()
-
-            InputDevicePicker(device: conductor.initialDevice)
-
-            NodeRollingView(conductor.tappableNodeA).clipped()
-
-            NodeOutputView(conductor.tappableNodeB).clipped()
-
-            NodeFFTView(conductor.tappableNodeC).clipped()
-        }
-//        .cookbookNavBarTitle("Tuner")
-        .onAppear {
-            conductor.start()
-        }
-        .onDisappear {
-            conductor.stop()
-        }
-    }
-}
-
-struct InputDevicePicker: View {
-    @State var device: Device
-
-    var body: some View {
-        Picker("Input: \(device.deviceID)", selection: $device) {
-            ForEach(getDevices(), id: \.self) {
-                Text($0.deviceID)
+            ZStack {
+                Color.black.frame(height: 1000)
+                NodeOutputView(conductor.tappableNodeB).clipped().frame(width: 1000, height: 100)    .rotationEffect(.degrees(-90))
+                Color.black.frame(height: 100)
+                Image("pickpng")
+                    .resizable()
+                    .frame(width: 300, height: 300)
+                ZStack {
+                    
+                    ZStack {
+                        Text("\(conductor.data.noteNameWithSharps) / \(conductor.data.noteNameWithFlats)").font(.largeTitle).foregroundColor(.black)
+                    }.padding()
+                    
+                }
+                .onAppear {
+                    conductor.start()
+                }
+                .onDisappear {
+                    conductor.stop()
+                }
             }
         }
-        .pickerStyle(MenuPickerStyle())
-        .onChange(of: device, perform: setInputDevice)
     }
-
-    func getDevices() -> [Device] {
-        AudioEngine.inputDevices.compactMap { $0 }
-    }
-
-    func setInputDevice(to device: Device) {
-        do {
-            try AudioEngine.setInputDevice(device)
-        } catch let err {
-            print(err)
+    
+    struct InputDevicePicker: View {
+        @State var device: Device
+        
+        var body: some View {
+            Picker("Input: \(device.deviceID)", selection: $device) {
+                ForEach(getDevices(), id: \.self) {
+                    Text($0.deviceID)
+                }
+            }
+            .pickerStyle(MenuPickerStyle())
+            .onChange(of: device, perform: setInputDevice)
+        }
+        
+        func getDevices() -> [Device] {
+            AudioEngine.inputDevices.compactMap { $0 }
+        }
+        
+        func setInputDevice(to device: Device) {
+            do {
+                try AudioEngine.setInputDevice(device)
+            } catch let err {
+                print(err)
+            }
         }
     }
-}
+
